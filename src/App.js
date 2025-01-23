@@ -1,63 +1,74 @@
-import React, { useState } from "react";
-import axios from "axios";
+import React, { useState } from 'react';
 
 const App = () => {
-  const [key, setKey] = useState("");
-  const [value, setValue] = useState("");
-  const [retrievedValue, setRetrievedValue] = useState("");
+  const [key, setKey] = useState('');
+  const [value, setValue] = useState('');
+  const [retrievedValue, setRetrievedValue] = useState('');
+  const [status, setStatus] = useState('');
 
-  const handleSet = async () => {
+  const handleSetValue = async () => {
     try {
-      await axios.put(
-        `${process.env.REACT_APP_VERCEL_KV_API_URL}/kv/${key}`,
-        { value },
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.REACT_APP_VERCEL_KV_API_KEY}`,
-          },
-        }
-      );
-      alert("Key-Value pair saved!");
+      const response = await fetch(`${process.env.REACT_APP_VERCEL_KV_API_URL}/set/${key}/${value}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${process.env.REACT_APP_VERCEL_KV_API_KEY}`,
+        },
+      });
+
+      if (response.ok) {
+        setStatus('Value set successfully!');
+      } else {
+        const errorData = await response.json();
+        setStatus(`Failed to set value: ${errorData.error}`);
+      }
     } catch (error) {
-      console.error("Error setting value:", error);
+      console.error('Error setting value:', error);
+      setStatus('Error occurred while setting value.');
     }
   };
 
-  const handleGet = async () => {
+  const handleGetValue = async () => {
     try {
-      const response = await axios.get(
-        `${process.env.REACT_APP_VERCEL_KV_API_URL}/kv/${key}`,
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.REACT_APP_VERCEL_KV_API_KEY}`,
-          },
-        }
-      );
-      setRetrievedValue(response.data.value);
+      const response = await fetch(`${process.env.REACT_APP_VERCEL_KV_API_URL}/get/${key}`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${process.env.REACT_APP_VERCEL_KV_API_KEY}`,
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setRetrievedValue(result.result || 'Key does not exist.');
+        setStatus('');
+      } else {
+        const errorData = await response.json();
+        setStatus(`Failed to get value: ${errorData.error}`);
+      }
     } catch (error) {
-      console.error("Error retrieving value:", error);
+      console.error('Error retrieving value:', error);
+      setStatus('Error occurred while retrieving value.');
     }
   };
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h1>Vercel KV Demo</h1>
-      <div>
-        <input
-          type="text"
-          placeholder="Enter Key"
-          value={key}
-          onChange={(e) => setKey(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Enter Value"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-        />
-        <button onClick={handleSet}>Set Key-Value</button>
-        <button onClick={handleGet}>Get Value</button>
-      </div>
+    <div>
+      <h1>Upstash Redis Demo</h1>
+      <input
+        type="text"
+        placeholder="Enter Key"
+        value={key}
+        onChange={(e) => setKey(e.target.value)}
+      />
+
+      <input
+        type="text"
+        placeholder="Enter Value"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+      />
+      <button onClick={handleSetValue}>Set Value in Redis</button>
+      <button onClick={handleGetValue}>Get Value from Redis</button>
+      <p>{status}</p>
       {retrievedValue && <p>Retrieved Value: {retrievedValue}</p>}
     </div>
   );
